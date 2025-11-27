@@ -43,7 +43,7 @@ const Navbar = ({ user: propUser, onLogout: propOnLogout }) => {
       {token || displayName ? (
         <>
           <span>Welcome{displayName ? `, ${displayName}` : ''}</span>
-          <Link to="/my-inviters" style={{ marginLeft: 12 }}>Events Detail </Link>
+          <Link to="/my-inviters" style={{ marginLeft: 12 }}>Event Details </Link>
           <button onClick={handleLogout} style={{ marginLeft: '12px' }}>Logout</button>
         </>
       ) : (
