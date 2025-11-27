@@ -1,0 +1,13 @@
+{
+  "name": "event-management",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start:server": "cd server && npm run dev",
+    "start:client": "cd client && npm start",
+    "start:all": "npm-run-all --parallel start:server start:client"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  }
+}
