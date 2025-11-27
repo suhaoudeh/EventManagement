@@ -122,6 +122,59 @@ const Home = () => {
     // auto-clear after 6 seconds
     setTimeout(() => setActionMessage({ text: '', type: '' }), 6000);
   };
+  const [editingId, setEditingId] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+
+  const startEdit = (event) => {
+    setEditingId(event._id);
+    setEditFormData({
+      title: event.title || event.name || '',
+      description: event.description || '',
+      date: event.date ? new Date(event.date).toISOString().slice(0,16) : '',
+      endDate: event.endDate ? new Date(event.endDate).toISOString().slice(0,16) : '',
+      address: event.location?.address || '',
+      city: event.location?.city || '',
+      country: event.location?.country || '',
+      capacity: event.capacity || '',
+      isPublic: !!event.isPublic,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditFormData({});
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setEditFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const saveEdit = async (id) => {
+    try {
+      // build payload matching server model
+      const payload = {
+        title: editFormData.title,
+        description: editFormData.description,
+        date: editFormData.date ? new Date(editFormData.date).toISOString() : undefined,
+        endDate: editFormData.endDate ? new Date(editFormData.endDate).toISOString() : undefined,
+        location: {
+          address: editFormData.address,
+          city: editFormData.city,
+          country: editFormData.country,
+        },
+        capacity: editFormData.capacity ? Number(editFormData.capacity) : undefined,
+        isPublic: !!editFormData.isPublic,
+      };
+      const res = await api.put(`/events/${id}`, payload);
+      setEvents(prev => prev.map(ev => ev._id === id ? res.data : ev));
+      showActionMessage('Event updated', 'success');
+      cancelEdit();
+    } catch (err) {
+      console.error('Failed to save event', err);
+      showActionMessage(err.response?.data?.error || err.message || 'Failed to update event', 'error');
+    }
+  };
  
   return (
     <div style={{ padding: "20px" }}>
@@ -173,42 +226,55 @@ const Home = () => {
             const rawDate = event.date || event.createdAt || event.created_at;
             const dateStr = rawDate ? new Date(rawDate).toLocaleDateString() : 'No date';
             return (
-              <li key={event._id} style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <strong>{title}</strong> — <span>{dateStr}</span>
-                  </div>
+              <li key={event._id} style={{ marginBottom: 12, padding: 10, border: '1px solid #eee', borderRadius: 6 }}>
+                {editingId === event._id ? (
                   <div>
-                    <button onClick={async () => {
-                      // Edit: prompt for new title and date then send PUT
-                      const newTitle = window.prompt('New title', title);
-                      if (newTitle === null) return; // cancelled
-                      const newDate = window.prompt('New date (YYYY-MM-DD or leave empty)', rawDate ? new Date(rawDate).toISOString().slice(0,10) : '');
-                      try {
-                        const payload = { title: newTitle };
-                        if (newDate) payload.date = newDate;
-                        const res = await api.put(`/events/${event._id}`, payload);
-                        // update local state
-                        setEvents((prev) => prev.map(ev => ev._id === event._id ? res.data : ev));
-                        showActionMessage('Event updated', 'success');
-                      } catch (err) {
-                        console.error('Failed to update event', err);
-                        showActionMessage(err.response?.data?.error || err.message || 'Failed to update event', 'error');
-                      }
-                    }}>Edit</button>
-                    <button onClick={async () => {
-                      const ok = window.confirm('Delete this event? This cannot be undone.');
-                      if (!ok) return;
-                      try {
-                        await api.delete(`/events/${event._id}`);
-                        setEvents((prev) => prev.filter(ev => ev._id !== event._id));
-                        showActionMessage('Event deleted', 'success');
-                      } catch (err) {
-                        console.error('Failed to delete event', err);
-                        showActionMessage(err.response?.data?.error || err.message || 'Failed to delete event', 'error');
-                      }
-                    }} style={{ marginLeft: 8 }}>Delete</button>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                      <input name="title" value={editFormData.title} onChange={handleEditChange} placeholder="Title" style={{flex:1}} />
+                      <input name="date" type="datetime-local" value={editFormData.date} onChange={handleEditChange} />
+                    </div>
+                    <div style={{ marginBottom: 8 }}>
+                      <textarea name="description" value={editFormData.description} onChange={handleEditChange} placeholder="Description" style={{width:'100%'}} />
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                      <input name="endDate" type="datetime-local" value={editFormData.endDate} onChange={handleEditChange} />
+                      <input name="capacity" type="number" value={editFormData.capacity} onChange={handleEditChange} placeholder="Capacity" />
+                      <label style={{display:'flex',alignItems:'center',gap:6}}><input name="isPublic" type="checkbox" checked={!!editFormData.isPublic} onChange={handleEditChange} /> Public</label>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                      <input name="address" value={editFormData.address} onChange={handleEditChange} placeholder="Address" />
+                      <input name="city" value={editFormData.city} onChange={handleEditChange} placeholder="City" />
+                      <input name="country" value={editFormData.country} onChange={handleEditChange} placeholder="Country" />
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => saveEdit(event._id)}>Save</button>
+                      <button onClick={cancelEdit}>Cancel</button>
+                    </div>
                   </div>
-                </li>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <strong>{title}</strong> — <span>{dateStr}</span>
+                      <div style={{ color: '#555' }}>{event.description}</div>
+                    </div>
+                    <div>
+                      <button onClick={() => startEdit(event)}>Edit</button>
+                      <button onClick={async () => {
+                        const ok = window.confirm('Delete this event? This cannot be undone.');
+                        if (!ok) return;
+                        try {
+                          await api.delete(`/events/${event._id}`);
+                          setEvents((prev) => prev.filter(ev => ev._id !== event._id));
+                          showActionMessage('Event deleted', 'success');
+                        } catch (err) {
+                          console.error('Failed to delete event', err);
+                          showActionMessage(err.response?.data?.error || err.message || 'Failed to delete event', 'error');
+                        }
+                      }} style={{ marginLeft: 8 }}>Delete</button>
+                    </div>
+                  </div>
+                )}
+              </li>
             );
           })}
         </ul>
