@@ -44,11 +44,18 @@ app.use('/api/inviters', invitersRoutes); // inviters API (POST /api/inviters, G
 // MongoDB connection & server start
 const PORT = process.env.PORT || 3000;
 
+// mongoose.connect(process.env.MONGO_URI)
+//   .then(() => {
+//     console.log('MongoDB connected');
+//     app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+//   })
+//   .catch(err => console.error('MongoDB connection error:', err));
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('MongoDB connected');
-    app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+    app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://<your-ip-address>:${PORT}`));
   })
   .catch(err => console.error('MongoDB connection error:', err));
+
 
 export default app;
