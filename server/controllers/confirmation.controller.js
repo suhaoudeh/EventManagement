@@ -63,3 +63,20 @@ export const addConfirmation = async (req, res) => {
   }
 };
 
+// PUT /api/inviters/:id/send
+// Marks an inviter as sent (sets status to 'sent' and records sentAt). Does not send email by itself.
+export const sendInvitation = async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!id) return res.status(400).json({ error: 'Inviter id required' });
+
+    const update = { status: 'sent', sentAt: new Date() };
+    const updated = await ConfirmationGuest.findByIdAndUpdate(id, update, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Inviter not found' });
+    res.status(200).json({ message: 'Invitation marked as sent', data: updated });
+  } catch (err) {
+    console.error('Failed to mark invitation as sent', err);
+    res.status(500).json({ error: 'Failed to send invitation' });
+  }
+};
+

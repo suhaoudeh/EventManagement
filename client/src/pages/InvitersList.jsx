@@ -36,18 +36,24 @@ const InvitersList = () => {
       setLoading(true);
       setError('');
       try {
-        const userId = getStoredUserId();
-        const params = {};
-        if (userId) params.userId = userId;
-        if (selectedEventId) params.eventId = selectedEventId;
-
         const token = localStorage.getItem('token');
-        let confRes;
-        if (token) {
-          confRes = await api.get('/inviters/me', { params: selectedEventId ? { eventId: selectedEventId } : {} });
-        } else {
-          confRes = await api.get('/inviters', { params });
+
+        // If an event is selected, fetch ALL inviters for that event (not only ones created by the logged-in user)
+        if (selectedEventId) {
+          const confRes = await api.get('/inviters', { params: { eventId: selectedEventId } });
+          setConfirmations(confRes.data || []);
+          return;
         }
+
+        // No specific event selected: fall back to showing inviters related to the user when authenticated
+        if (token) {
+          const confRes = await api.get('/inviters/me');
+          setConfirmations(confRes.data || []);
+          return;
+        }
+
+        // Public: list all inviters (or none) when not authenticated
+        const confRes = await api.get('/inviters');
         setConfirmations(confRes.data || []);
       } catch (err) {
         console.error(err);
