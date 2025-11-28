@@ -7,6 +7,8 @@ import Register from './pages/Register.jsx';
 import CreateEvent from './pages/CreateEvent.jsx';
 import Inviters from './pages/Inviters.jsx';
 import InvitersList from './pages/InvitersList.jsx';
+import AddInviters from './pages/AddInviters.jsx';
+import SendInvitations from './pages/SendInvitations.jsx';
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/create" element={<CreateEvent />} />
         <Route path="/inviters" element={<Inviters />} />
+        <Route path="/add-inviters" element={<AddInviters />} />
+        <Route path="/send-invitations" element={<SendInvitations />} />
         <Route path="/my-inviters" element={<InvitersList />} />
       </Routes>
     </Router>

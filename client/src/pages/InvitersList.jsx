@@ -9,17 +9,6 @@ const InvitersList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const getStoredUserId = () => {
-    try {
-      const raw = localStorage.getItem('user');
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      return parsed._id || parsed.id || parsed.userId || null;
-    } catch (err) {
-      return null;
-    }
-  };
-
   useEffect(() => {
     const fetchEvents = async () => {
       try {
@@ -37,18 +26,24 @@ const InvitersList = () => {
       setLoading(true);
       setError('');
       try {
-        const userId = getStoredUserId();
-        const params = {};
-        if (userId) params.userId = userId;
-        if (selectedEventId) params.eventId = selectedEventId;
-
         const token = localStorage.getItem('token');
-        let confRes;
-        if (token) {
-          confRes = await api.get('/inviters/me', { params: selectedEventId ? { eventId: selectedEventId } : {} });
-        } else {
-          confRes = await api.get('/inviters', { params });
+
+        // If an event is selected, fetch ALL inviters for that event
+        if (selectedEventId) {
+          const confRes = await api.get('/inviters', { params: { eventId: selectedEventId } });
+          setConfirmations(confRes.data || []);
+          return;
         }
+
+        // No specific event selected: fall back to inviters related to the user if authenticated
+        if (token) {
+          const confRes = await api.get('/inviters/me');
+          setConfirmations(confRes.data || []);
+          return;
+        }
+
+        // Public: list all inviters (or none) when not authenticated
+        const confRes = await api.get('/inviters');
         setConfirmations(confRes.data || []);
       } catch (err) {
         console.error(err);
@@ -71,7 +66,9 @@ const InvitersList = () => {
     return acc;
   }, {});
 
-  const selectedEvent = selectedEventId ? events.find(e => String(e._id || e.id) === String(selectedEventId)) : null;
+  const selectedEvent = selectedEventId
+    ? events.find(e => String(e._id || e.id) === String(selectedEventId))
+    : null;
 
   return (
     <div className="page-container">
@@ -79,10 +76,16 @@ const InvitersList = () => {
 
       <div className="filter-row">
         <label style={{ marginRight: 8 }}>Filter by event:</label>
-        <select className="form-select" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
+        <select
+          className="form-select"
+          value={selectedEventId}
+          onChange={(e) => setSelectedEventId(e.target.value)}
+        >
           <option value="">All my events</option>
           {events.map((ev) => (
-            <option key={ev._id || ev.id} value={ev._id || ev.id}>{ev.title || ev.name || 'Untitled Event'}</option>
+            <option key={ev._id || ev.id} value={ev._id || ev.id}>
+              {ev.title || ev.name || 'Untitled Event'}
+            </option>
           ))}
         </select>
       </div>
@@ -93,7 +96,9 @@ const InvitersList = () => {
         <section className="section">
           <h2>{selectedEvent.title || selectedEvent.name || 'Untitled Event'}</h2>
           {selectedEvent.description && <p style={{ marginTop: 4 }}>{selectedEvent.description}</p>}
-          <p style={{ marginTop: 0, color: '#555' }}>{selectedEvent.date ? new Date(selectedEvent.date).toLocaleString() : ''}</p>
+          <p style={{ marginTop: 0, color: '#555' }}>
+            {selectedEvent.date ? new Date(selectedEvent.date).toLocaleString() : ''}
+          </p>
           <h3>Inviters</h3>
           <ul>
             {(grouped[selectedEvent._id] || grouped[String(selectedEvent._id)] || []).length === 0 ? (
@@ -113,7 +118,9 @@ const InvitersList = () => {
           <section key={ev._id || ev.id} className="section">
             <h2>{ev.title || ev.name || 'Untitled Event'}</h2>
             {ev.description && <p style={{ marginTop: 4 }}>{ev.description}</p>}
-            <p style={{ marginTop: 0, color: '#555' }}>{ev.date ? new Date(ev.date).toLocaleString() : ''}</p>
+            <p style={{ marginTop: 0, color: '#555' }}>
+              {ev.date ? new Date(ev.date).toLocaleString() : ''}
+            </p>
             <ul>
               {(grouped[ev._id] || grouped[String(ev._id)] || []).length === 0 ? (
                 <li>No inviters for this event.</li>
@@ -130,9 +137,7 @@ const InvitersList = () => {
         ))
       )}
 
-      {events.length > 0 && confirmations.length === 0 && (
-        <p>No inviters found for your events.</p>
-      )}
+      {events.length > 0 && confirmations.length === 0 && <p>No inviters found for your events.</p>}
     </div>
   );
 };
