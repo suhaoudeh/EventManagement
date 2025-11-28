@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import logo from '../assets/event_logo.png';
 
 const Navbar = ({ user: propUser, onLogout: propOnLogout }) => {
   const navigate = useNavigate();
@@ -35,21 +36,29 @@ const Navbar = ({ user: propUser, onLogout: propOnLogout }) => {
   const displayName = user?.name || user?.username || user?.email || null;
 
   return (
-    <nav style={{ padding: '12px', borderBottom: '1px solid #ccc', display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <Link to="/" style={{ marginRight: '12px', textDecoration: 'none', color: 'inherit', fontWeight: 600 }}>Event Management</Link>
-      {/* explicit Home button for quick navigation */}
-      <Link to="/home" style={{ marginRight: '12px' }}>Home</Link>
-      <div style={{ flex: 1 }} />
+    <nav className="navbar">
+      <Link to="/" className="navbar-logo">
+        <img src={logo} alt="Event Logo" className="navbar-logo-img" />
+      </Link>
+
+      <Link to="/home" className="navbar-link">Home</Link>
+
+      <div className="navbar-spacer" />
+
       {token || displayName ? (
         <>
-          <span>Welcome{displayName ? `, ${displayName}` : ''}</span>
-          <Link to="/my-inviters" style={{ marginLeft: 12 }}>Event Details </Link>
-          <button onClick={handleLogout} style={{ marginLeft: '12px' }}>Logout</button>
+          <span className="navbar-welcome">
+            Welcome{displayName ? `, ${displayName}` : ''}
+          </span>
+
+          <Link to="/my-inviters" className="navbar-link">Event Details</Link>
+
+          <button onClick={handleLogout} className="navbar-btn">Logout</button>
         </>
       ) : (
         <>
-          <Link to="/login" style={{ marginRight: '12px' }}>Login</Link>
-          <Link to="/register">Register</Link>
+          <Link to="/login" className="navbar-link">Login</Link>
+          <Link to="/register" className="navbar-link">Register</Link>
         </>
       )}
     </nav>

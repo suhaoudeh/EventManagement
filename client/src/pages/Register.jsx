@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
+import '../styles.css';
 
 function Register() {
   const [name, setName] = useState('');
@@ -15,7 +16,6 @@ function Register() {
     try {
       const res = await api.post('/auth/register', { name, email, password });
 
-      // Persist the returned user + token and navigate to home
       localStorage.setItem('user', JSON.stringify(res.data));
       if (res.data.token) localStorage.setItem('token', res.data.token);
 
@@ -26,33 +26,35 @@ function Register() {
   };
 
   return (
-    <div>
+    <div className="auth-container page-container">
       <h2>Register</h2>
-      <form onSubmit={handleSubmit}>
-        <input
+      <form onSubmit={handleSubmit} className="form-container">
+        <input className="form-input"
           type="text"
           placeholder="Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
         />
-        <input
+        <input className="form-input"
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <input
+        <input className="form-input"
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <button type="submit">Register</button>
+        <div style={{ marginTop: 10 }}>
+          <button className="button-primary" type="submit">Register</button>
+        </div>
       </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className="text-error">{error}</p>}
     </div>
   );
 }

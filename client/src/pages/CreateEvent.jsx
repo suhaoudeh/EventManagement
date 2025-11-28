@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import '../styles.css';
 
 const CreateEvent = () => {
   const navigate = useNavigate();
@@ -16,7 +17,6 @@ const CreateEvent = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // simple check for presence of token/local user
   const isAuthenticated = () => {
     try {
       const token = localStorage.getItem('token');
@@ -26,11 +26,12 @@ const CreateEvent = () => {
     }
   };
 
+  // FIXED: navigate added to dependency array
   useEffect(() => {
     if (!isAuthenticated()) {
       navigate('/login');
     }
-  }, []);
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,8 +54,7 @@ const CreateEvent = () => {
 
     try {
       setLoading(true);
-      const res = await api.post('/events', payload);
-      // on success, redirect to home and show event list (home will refetch)
+      await api.post('/events', payload); // removed unused "res"
       navigate('/');
     } catch (err) {
       console.error('Create event error', err);
@@ -65,33 +65,116 @@ const CreateEvent = () => {
   };
 
   return (
-    <div style={{ padding: 20 }}>
+    <div className="page-container">
       <h2>Create Event</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 600 }}>
-        <input placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} required />
-        <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
-        <label>Start Date</label>
-        <input type="datetime-local" value={date} onChange={e => setDate(e.target.value)} />
-        <label>End Date</label>
-        <input type="datetime-local" value={endDate} onChange={e => setEndDate(e.target.value)} />
 
-        <h4>Location</h4>
-        <input placeholder="Address" value={address} onChange={e => setAddress(e.target.value)} />
-        <input placeholder="City" value={city} onChange={e => setCity(e.target.value)} />
-        <input placeholder="Country" value={country} onChange={e => setCountry(e.target.value)} />
-
-        <input placeholder="Capacity" type="number" value={capacity} onChange={e => setCapacity(e.target.value)} />
-
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <input type="checkbox" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} /> Public event
-        </label>
-
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button type="submit" disabled={loading}>{loading ? 'Creating...' : 'Create Event'}</button>
-          <button type="button" onClick={() => navigate(-1)}>Cancel</button>
+      <form
+        className="form-container"
+        onSubmit={handleSubmit}
+        style={{ maxWidth: 720, margin: '0 auto' }}
+      >
+        <div className="form-row">
+          <input
+            className="form-input"
+            placeholder="Title"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            required
+          />
         </div>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        <div className="form-row">
+          <textarea
+            className="form-textarea"
+            placeholder="Description"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+          />
+        </div>
+
+        <div className="form-row">
+          <label className="form-label">Start Date</label>
+          <input
+            className="form-input"
+            type="datetime-local"
+            value={date}
+            onChange={e => setDate(e.target.value)}
+          />
+        </div>
+
+        <div className="form-row">
+          <label className="form-label">End Date</label>
+          <input
+            className="form-input"
+            type="datetime-local"
+            value={endDate}
+            onChange={e => setEndDate(e.target.value)}
+          />
+        </div>
+
+        <h4>Location</h4>
+
+        <div className="form-row">
+          <input
+            className="form-input"
+            placeholder="Address"
+            value={address}
+            onChange={e => setAddress(e.target.value)}
+          />
+        </div>
+
+        <div className="form-row">
+          <input
+            className="form-input"
+            placeholder="City"
+            value={city}
+            onChange={e => setCity(e.target.value)}
+          />
+        </div>
+
+        <div className="form-row">
+          <input
+            className="form-input"
+            placeholder="Country"
+            value={country}
+            onChange={e => setCountry(e.target.value)}
+          />
+        </div>
+
+        <div className="form-row">
+          <input
+            className="form-input"
+            placeholder="Capacity"
+            type="number"
+            value={capacity}
+            onChange={e => setCapacity(e.target.value)}
+          />
+        </div>
+
+        <label className="flex-row" style={{ marginBottom: 8 }}>
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={e => setIsPublic(e.target.checked)}
+          />
+          <span style={{ marginLeft: 8 }}>Public event</span>
+        </label>
+
+        <div className="flex-row">
+          <button className="button-primary" type="submit" disabled={loading}>
+            {loading ? 'Creating...' : 'Create Event'}
+          </button>
+
+          <button
+            className="button-secondary"
+            type="button"
+            onClick={() => navigate(-1)}
+          >
+            Cancel
+          </button>
+        </div>
+
+        {error && <p className="text-error">{error}</p>}
       </form>
     </div>
   );

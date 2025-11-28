@@ -1,81 +1,23 @@
-
-// import React, { useEffect, useState } from 'react';
-// import api from '../api';
-
-// const Home = () => {
-//   const [events, setEvents] = useState([]);
-//   const [user, setUser] = useState(null);
-
-//   // Retrieve user info from localStorage
-//   useEffect(() => {
-//     try {
-//       const storedUser = JSON.parse(localStorage.getItem("user"));
-//       setUser(storedUser);
-//     } catch (err) {
-//       console.error("Failed to parse user:", err);
-//     }
-//   }, []);
-
-//   // Fetch events
-//   useEffect(() => {
-//     const fetchEvents = async () => {
-//       try {
-//         const res = await api.get('/events');
-//         setEvents(res.data);
-//       } catch (err) {
-//         console.error(err);
-//       }
-//     };
-//     fetchEvents();
-//   }, []);
-
-//   return (
-//     <div style={{ padding: "20px" }}>
-//       <h1>Home Page</h1>
-//       {user && user.name ? (
-//         <h2>Welcome, {user.name}</h2>
-//       ) : (
-//         <h2>Welcome Guest</h2>
-//       )}
-
-//       <h3>Events List:</h3>
-//       {events.length === 0 ? (
-//         <p>No events found</p>
-//       ) : (
-//         <ul>
-//           {events.map((event) => (
-//             <li key={event._id}>
-//               {event.name} - {event.date}
-//             </li>
-//           ))}
-//         </ul>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default Home;
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
- 
+import homepageImage from '../assets/homepage_event.png';
+import '../styles.css';
+
 const Home = () => {
   const [events, setEvents] = useState([]);
   const [user, setUser] = useState(null);
   const [fetchError, setFetchError] = useState('');
   const [actionMessage, setActionMessage] = useState({ text: '', type: '' });
- 
-  // Retrieve logged-in user (preferred) and token from localStorage
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem('user');
       if (raw) {
         const parsed = JSON.parse(raw);
-        // parsed may be { name, email, token } or similar
         const username = parsed.name || parsed.username || parsed.email;
         setUser(username ? { username } : parsed);
       } else {
-        // fallback to older key
         const username = localStorage.getItem('username');
         if (username) setUser({ username });
         else setUser(null);
@@ -86,7 +28,6 @@ const Home = () => {
     }
   }, []);
 
-  // Fetch events for the authenticated user only. Re-run when token changes.
   useEffect(() => {
     const fetchEvents = async () => {
       try {
@@ -101,25 +42,22 @@ const Home = () => {
       } catch (err) {
         console.error(err);
         setEvents([]);
-        // show a friendly error to the user
         setFetchError(err.response?.data?.error || err.message || 'Failed to fetch events');
       }
     };
 
     fetchEvents();
-    // subscribe to storage events (optional) to react to login/logout in other tabs
     const onStorage = (e) => {
       if (e.key === 'token') fetchEvents();
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
-  }, [/* rerun when token in localStorage changes — handled via storage event or manual refresh */]);
- 
+  }, []);
+
   const navigate = useNavigate();
 
   const showActionMessage = (msg, type = 'error') => {
     setActionMessage({ text: msg, type });
-    // auto-clear after 6 seconds
     setTimeout(() => setActionMessage({ text: '', type: '' }), 6000);
   };
   const [editingId, setEditingId] = useState(null);
@@ -152,7 +90,6 @@ const Home = () => {
 
   const saveEdit = async (id) => {
     try {
-      // build payload matching server model
       const payload = {
         title: editFormData.title,
         description: editFormData.description,
@@ -175,113 +112,118 @@ const Home = () => {
       showActionMessage(err.response?.data?.error || err.message || 'Failed to update event', 'error');
     }
   };
- 
+
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Home Page</h1>
-      {user && user.username ? (
-        <h2>Welcome, {user.username}</h2>
-      ) : (
-        <h2>Welcome Guest — please log in to see your events</h2>
-      )}
- 
-      <section style={{ marginBottom: 20 }}>
-        <h3>Create Event</h3>
-        <p>You must be logged in to create events.</p>
-        <button onClick={() => {
-          // redirect logged-in users to a creation page (if implemented)
-          if (user) navigate('/create');
-          else navigate('/login');
-        }}>
-          Create Event
-        </button>
+    <div className="page-container">
+      <section className="home-hero">
+        <h1 className="home-title">Plan. Organize. Manage.</h1>
+        <p className="home-subtitle">Your all-in-one platform for seamless event management.</p>
+        <p className="home-tagline">Plan and run events with clarity — manage guests, schedules, and logistics in one place.</p>
+        <div className="hero-buttons">
+          <button className="button-primary" onClick={() => { if (user) navigate('/create'); else navigate('/login'); }}>Get Started</button>
+        </div>
+
+       <img 
+          src={homepageImage} 
+          alt="Event preview" 
+          className="homepage-img"
+      />
       </section>
 
       {actionMessage.text && (
-        <div style={{
-          padding: '10px 14px',
-          background: actionMessage.type === 'success' ? '#e6ffed' : '#ffe6e6',
-          color: actionMessage.type === 'success' ? '#0b6623' : '#9b1c1c',
-          border: `1px solid ${actionMessage.type === 'success' ? '#2ecc71' : '#ff4d4d'}`,
-          borderRadius: 4,
-          marginBottom: 12
-        }}>
+        <div className={`action-message ${actionMessage.type === 'success' ? 'action-message-success' : 'action-message-error'}`}>
           {actionMessage.text}
         </div>
       )}
- 
-      <h3>Your Events:</h3>
-      {events.length === 0 ? (
-        <>
-          {fetchError ? (
-            <p style={{ color: 'red' }}>Error loading events: {fetchError}</p>
-          ) : (
-            <p>No events found for this account.</p>
-          )}
-        </>
-      ) : (
-        <ul>
-          {events.map((event) => {
-            const title = event.title || event.name || 'Untitled Event';
-            const rawDate = event.date || event.createdAt || event.created_at;
-            const dateStr = rawDate ? new Date(rawDate).toLocaleDateString() : 'No date';
-            return (
-              <li key={event._id} style={{ marginBottom: 12, padding: 10, border: '1px solid #eee', borderRadius: 6 }}>
-                {editingId === event._id ? (
-                  <div>
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                      <input name="title" value={editFormData.title} onChange={handleEditChange} placeholder="Title" style={{flex:1}} />
-                      <input name="date" type="datetime-local" value={editFormData.date} onChange={handleEditChange} />
+
+      <section className="section">
+        <h3>Create Event</h3>
+        <p>You must be logged in to create events.</p>
+        <div className="gap-12">
+          <button className="button-primary" onClick={() => { if (user) navigate('/create'); else navigate('/login'); }}>Create Event</button>
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Your Events:</h3>
+
+        {events.length === 0 ? (
+          <>
+            {fetchError ? (
+              <p className="text-error">Error loading events: {fetchError}</p>
+            ) : (
+              <>
+                <p>No events found for this account.</p>
+              </>
+            )}
+          </>
+        ) : (
+          <ul className="event-list">
+            {events.map((event) => {
+              const title = event.title || event.name || 'Untitled Event';
+              const rawDate = event.date || event.createdAt || event.created_at;
+              const dateStr = rawDate ? new Date(rawDate).toLocaleDateString() : 'No date';
+              return (
+                <li key={event._id} className="event-card">
+                  <div className="event-left">
+                    <div className="event-card-header">
+                      <div>
+                        <strong className="event-title">{title}</strong> — <span className="event-meta">{dateStr}</span>
+                        <div className="event-description">{event.description}</div>
+                      </div>
+                      <div className="flex-row">
+                        <button className="button-primary" onClick={() => startEdit(event)}>Edit</button>
+                        <button className="button-danger" onClick={async () => {
+                          const ok = window.confirm('Delete this event? This cannot be undone.');
+                          if (!ok) return;
+                          try {
+                            await api.delete(`/events/${event._id}`);
+                            setEvents((prev) => prev.filter(ev => ev._id !== event._id));
+                            showActionMessage('Event deleted', 'success');
+                          } catch (err) {
+                            console.error('Failed to delete event', err);
+                            showActionMessage(err.response?.data?.error || err.message || 'Failed to delete event', 'error');
+                          }
+                        }}>Delete</button>
+                      </div>
                     </div>
-                    <div style={{ marginBottom: 8 }}>
-                      <textarea name="description" value={editFormData.description} onChange={handleEditChange} placeholder="Description" style={{width:'100%'}} />
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                      <input name="endDate" type="datetime-local" value={editFormData.endDate} onChange={handleEditChange} />
-                      <input name="capacity" type="number" value={editFormData.capacity} onChange={handleEditChange} placeholder="Capacity" />
-                      <label style={{display:'flex',alignItems:'center',gap:6}}><input name="isPublic" type="checkbox" checked={!!editFormData.isPublic} onChange={handleEditChange} /> Public</label>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                      <input name="address" value={editFormData.address} onChange={handleEditChange} placeholder="Address" />
-                      <input name="city" value={editFormData.city} onChange={handleEditChange} placeholder="City" />
-                      <input name="country" value={editFormData.country} onChange={handleEditChange} placeholder="Country" />
-                    </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button onClick={() => saveEdit(event._id)}>Save</button>
-                      <button onClick={cancelEdit}>Cancel</button>
-                    </div>
+
+                    {editingId === event._id && (
+                      <div style={{ marginTop: 10 }}>
+                        <div className="edit-row">
+                          <input className="edit-input" name="title" value={editFormData.title} onChange={handleEditChange} placeholder="Title" />
+                          <input className="edit-input" name="date" type="datetime-local" value={editFormData.date} onChange={handleEditChange} />
+                        </div>
+                        <div style={{ marginBottom: 8 }}>
+                          <textarea className="edit-textarea" name="description" value={editFormData.description} onChange={handleEditChange} placeholder="Description" />
+                        </div>
+                        <div className="edit-row">
+                          <input className="edit-input" name="endDate" type="datetime-local" value={editFormData.endDate} onChange={handleEditChange} />
+                          <input className="edit-input" name="capacity" type="number" value={editFormData.capacity} onChange={handleEditChange} placeholder="Capacity" />
+                          <label className="flex-row">
+                            <input name="isPublic" type="checkbox" checked={!!editFormData.isPublic} onChange={handleEditChange} /> Public
+                          </label>
+                        </div>
+                        <div className="edit-row" style={{ marginBottom: 8 }}>
+                          <input className="edit-input" name="address" value={editFormData.address} onChange={handleEditChange} placeholder="Address" />
+                          <input className="edit-input" name="city" value={editFormData.city} onChange={handleEditChange} placeholder="City" />
+                          <input className="edit-input" name="country" value={editFormData.country} onChange={handleEditChange} placeholder="Country" />
+                        </div>
+                        <div className="flex-row">
+                          <button className="button-primary" onClick={() => saveEdit(event._id)}>Save</button>
+                          <button className="button-secondary" onClick={cancelEdit}>Cancel</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                      <strong>{title}</strong> — <span>{dateStr}</span>
-                      <div style={{ color: '#555' }}>{event.description}</div>
-                    </div>
-                    <div>
-                      <button onClick={() => startEdit(event)}>Edit</button>
-                      <button onClick={async () => {
-                        const ok = window.confirm('Delete this event? This cannot be undone.');
-                        if (!ok) return;
-                        try {
-                          await api.delete(`/events/${event._id}`);
-                          setEvents((prev) => prev.filter(ev => ev._id !== event._id));
-                          showActionMessage('Event deleted', 'success');
-                        } catch (err) {
-                          console.error('Failed to delete event', err);
-                          showActionMessage(err.response?.data?.error || err.message || 'Failed to delete event', 'error');
-                        }
-                      }} style={{ marginLeft: 8 }}>Delete</button>
-                    </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 };
- 
+
 export default Home;
- 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from '../api';
+import '../styles.css';
 
 const Inviters = () => {
   const [form, setForm] = useState({
@@ -38,43 +39,43 @@ const Inviters = () => {
   };
 
   return (
-    <div style={{ padding: 20 }}>
+    <div className="page-container">
       <h1>Inviters</h1>
       <p>Submit inviter / guest information for an event.</p>
 
-      <form onSubmit={handleSubmit} style={{ maxWidth: 600 }}>
-        <div style={{ marginBottom: 8 }}>
-          <label>Event ID (optional)</label><br />
-          <input name="eventId" value={form.eventId} onChange={handleChange} style={{ width: '100%' }} />
+      <form onSubmit={handleSubmit} className="form-container">
+        <div className="form-row">
+          <label className="form-label">Event ID (optional)</label>
+          <input className="form-input" name="eventId" value={form.eventId} onChange={handleChange} />
         </div>
 
-        <div style={{ marginBottom: 8 }}>
-          <label>Guest Name</label><br />
-          <input name="guestName" value={form.guestName} onChange={handleChange} required style={{ width: '100%' }} />
+        <div className="form-row">
+          <label className="form-label">Guest Name</label>
+          <input className="form-input" name="guestName" value={form.guestName} onChange={handleChange} required />
         </div>
 
-        <div style={{ marginBottom: 8 }}>
-          <label>Phone</label><br />
-          <input name="phone" value={form.phone} onChange={handleChange} style={{ width: '100%' }} />
+        <div className="form-row">
+          <label className="form-label">Phone</label>
+          <input className="form-input" name="phone" value={form.phone} onChange={handleChange} />
         </div>
 
-        <div style={{ marginBottom: 8 }}>
-          <label>Email</label><br />
-          <input name="guestEmail" value={form.guestEmail} onChange={handleChange} type="email" required style={{ width: '100%' }} />
+        <div className="form-row">
+          <label className="form-label">Email</label>
+          <input className="form-input" name="guestEmail" value={form.guestEmail} onChange={handleChange} type="email" required />
         </div>
 
-        <div style={{ marginBottom: 8 }}>
-          <label>Message</label><br />
-          <textarea name="message" value={form.message} onChange={handleChange} style={{ width: '100%' }} />
+        <div className="form-row">
+          <label className="form-label">Message</label>
+          <textarea className="form-textarea" name="message" value={form.message} onChange={handleChange} />
         </div>
 
         <div style={{ marginTop: 12 }}>
-          <button type="submit">Submit</button>
+          <button className="button-primary" type="submit">Submit</button>
         </div>
       </form>
 
       {status.message && (
-        <p style={{ color: status.type === 'error' ? 'red' : 'green' }}>{status.message}</p>
+        <p className={status.type === 'error' ? 'text-error' : ''}>{status.message}</p>
       )}
     </div>
   );
