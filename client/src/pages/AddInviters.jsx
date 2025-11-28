@@ -21,6 +21,8 @@ const AddInviters = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [status, setStatus] = useState({ type: '', message: '' });
+  const [myEvents, setMyEvents] = useState([]);
+  const [copied, setCopied] = useState(false);
 
   // fetch inviters when eventId is present
   useEffect(() => {
@@ -43,6 +45,21 @@ const AddInviters = () => {
     fetchInviters();
     return () => { cancelled = true; };
   }, [form.eventId]);
+
+  // fetch current user's events to allow quick selection
+  useEffect(() => {
+    let cancelled = false;
+    const fetchMyEvents = async () => {
+      try {
+        const res = await api.get('/events/me');
+        if (!cancelled) setMyEvents(res.data || []);
+      } catch (err) {
+        console.warn('Failed to load user events', err?.response?.data || err.message || err);
+      }
+    };
+    fetchMyEvents();
+    return () => { cancelled = true; };
+  }, []);
 
   const getStoredUserId = () => {
     try {
@@ -126,13 +143,70 @@ const AddInviters = () => {
         </div>
 
         <div style={{ marginTop: 12 }}>
-          <button type="submit">Add Inviter</button>
+          <button className="btn btn-primary" type="submit">Add Inviter</button>
         </div>
       </form>
 
       {status.message && (
         <p style={{ color: status.type === 'error' ? 'red' : 'green' }}>{status.message}</p>
       )}
+      {/* show user's events for quick pick and copy */}
+      <div style={{ marginTop: 18 }}>
+        <strong>Your Events</strong>
+          {myEvents.length === 0 ? (
+          <div style={{ marginTop: 8, color: '#666' }}>No events yet.</div>
+        ) : (
+          <ul style={{ marginTop: 8 }}>
+            {myEvents.map(ev => {
+              const idVal = ev._id || ev.id;
+              const isSelected = String(idVal) === String(form.eventId);
+              return (
+                <li
+                  key={idVal}
+                  style={{
+                    marginBottom: 10,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: 8,
+                    borderRadius: 8,
+                    background: isSelected ? '#e8faf0' : 'transparent',
+                    border: isSelected ? '1px solid #2aa173' : '1px solid transparent'
+                  }}
+                  aria-selected={isSelected}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600 }}>{ev.title || 'Untitled'}</div>
+                    <div style={{ fontSize: 12, color: '#666' }}>{ev.date ? new Date(ev.date).toLocaleString() : ''}</div>
+                  </div>
+                  <div style={{ fontFamily: 'monospace' }}>{idVal}</div>
+                  <button
+                    className="btn btn-sm"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(String(idVal));
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 1500);
+                      } catch (e) {
+                        console.error('copy failed', e);
+                      }
+                    }}
+                  >Copy</button>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setForm(f => ({ ...f, eventId: idVal }))}
+                    disabled={isSelected}
+                  >
+                    {isSelected ? 'Selected' : 'Use'}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {copied && <div style={{ color: '#2a7', marginTop: 6 }}>Copied to clipboard</div>}
+      </div>
+
       <hr style={{ margin: '20px 0' }} />
       <h2>Inviters for event</h2>
       {!form.eventId && <p>Provide an Event ID above to see inviters for that event.</p>}

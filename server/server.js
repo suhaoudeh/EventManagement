@@ -26,7 +26,7 @@ app.use((req, res, next) => {
     .map(([k, v]) => `${k}:${String(v).slice(0, 100)}`)
     .join(' | ');
   console.log(`[REQ] ${req.method} ${req.originalUrl} - Headers: ${headersPreview}`);
- next();
+  next();
 });
 
 // Test root route

@@ -124,6 +124,23 @@ export const getMyEvents = async (req, res) => {
   }
 };
 
+// GET single event by id
+export const getEventById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const event = await Event.findById(id).populate('user_ID', 'name email');
+    if (!event) return res.status(404).json({ error: 'Event not found' });
+
+    res.json({
+      ...event._doc,
+      createdBy: event.user_ID,
+      user_ID: undefined
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 
 // CREATE a new event
 export const createEvent = async (req, res) => {

@@ -2,9 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
-import homepageImage from '../assets/homepage_event.png';
-import '../styles.css';
- 
+import homepageEventImg from '../assets/homepage_event.png';
+
 const Home = () => {
   const [events, setEvents] = useState([]);
   const [user, setUser] = useState(null);
@@ -13,18 +12,17 @@ const Home = () => {
   const [invitersByEvent, setInvitersByEvent] = useState({});
   const [openInvitersFor, setOpenInvitersFor] = useState(null);
   const [copiedEventId, setCopiedEventId] = useState(null);
- 
-  // Retrieve logged-in user (preferred) and token from localStorage
+  const [editingId, setEditingId] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem('user');
       if (raw) {
         const parsed = JSON.parse(raw);
-        // parsed may be { name, email, token } or similar
         const username = parsed.name || parsed.username || parsed.email;
         setUser(username ? { username } : parsed);
       } else {
-        // fallback to older key
         const username = localStorage.getItem('username');
         if (username) setUser({ username });
         else setUser(null);
@@ -35,7 +33,6 @@ const Home = () => {
     }
   }, []);
 
-  // Fetch events for the authenticated user only. Re-run when token changes.
   useEffect(() => {
     const fetchEvents = async () => {
       try {
@@ -47,7 +44,7 @@ const Home = () => {
         const res = await api.get('/events/me');
         setEvents(res.data || []);
         setFetchError('');
-        // fetch inviters for this user's events and group by eventId
+
         try {
           const invRes = await api.get('/inviters/me');
           const grouped = (invRes.data || []).reduce((acc, c) => {
@@ -63,29 +60,22 @@ const Home = () => {
       } catch (err) {
         console.error(err);
         setEvents([]);
-        // show a friendly error to the user
         setFetchError(err.response?.data?.error || err.message || 'Failed to fetch events');
       }
     };
 
     fetchEvents();
-    // subscribe to storage events (optional) to react to login/logout in other tabs
-    const onStorage = (e) => {
-      if (e.key === 'token') fetchEvents();
-    };
+    const onStorage = (e) => { if (e.key === 'token') fetchEvents(); };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
-  }, [/* rerun when token in localStorage changes — handled via storage event or manual refresh */]);
- 
+  }, []);
+
   const navigate = useNavigate();
 
   const showActionMessage = (msg, type = 'error') => {
     setActionMessage({ text: msg, type });
-    // auto-clear after 6 seconds
     setTimeout(() => setActionMessage({ text: '', type: '' }), 6000);
   };
-  const [editingId, setEditingId] = useState(null);
-  const [editFormData, setEditFormData] = useState({});
 
   const startEdit = (event) => {
     setEditingId(event._id);
@@ -102,10 +92,7 @@ const Home = () => {
     });
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditFormData({});
-  };
+  const cancelEdit = () => { setEditingId(null); setEditFormData({}); };
 
   const handleEditChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -114,17 +101,12 @@ const Home = () => {
 
   const saveEdit = async (id) => {
     try {
-      // build payload matching server model
       const payload = {
         title: editFormData.title,
         description: editFormData.description,
         date: editFormData.date ? new Date(editFormData.date).toISOString() : undefined,
         endDate: editFormData.endDate ? new Date(editFormData.endDate).toISOString() : undefined,
-        location: {
-          address: editFormData.address,
-          city: editFormData.city,
-          country: editFormData.country,
-        },
+        location: { address: editFormData.address, city: editFormData.city, country: editFormData.country },
         capacity: editFormData.capacity ? Number(editFormData.capacity) : undefined,
         isPublic: !!editFormData.isPublic,
       };
@@ -137,58 +119,45 @@ const Home = () => {
       showActionMessage(err.response?.data?.error || err.message || 'Failed to update event', 'error');
     }
   };
- 
+
   return (
-    <div style={{ padding: "20px" }}>
+    <div style={{ padding: 20 }}>
       <h1>Home Page</h1>
-      {user && user.username ? (
-        <h2>Welcome, {user.username}</h2>
-      ) : (
-        <h2>Welcome Guest — please log in to see your events</h2>
-      )}
- 
-          <section className="home-hero">
-            <div>
-              <img src={homepageImage} alt="Events" className="homepage-img" />
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <h3>Create Event</h3>
-              <p>You must be logged in to create events.</p>
-              <button className="btn btn-primary" onClick={() => {
-                // redirect logged-in users to a creation page (if implemented)
-                if (user) navigate('/create');
-                else navigate('/login');
-              }}>
-                Create Event
-              </button>
-            </div>
-          </section>
+      <div style={{ margin: '16px 0', borderRadius: 8, overflow: 'hidden' }}>
+        <img src={homepageEventImg} alt="Homepage event" style={{ width: '100%', display: 'block', objectFit: 'cover', maxHeight: 320 }} />
+      </div>
+      <div style={{ margin: '12px 0', padding: 12, borderRadius: 8, background: '#f5f8fa' }}>
+        <p style={{ margin: 0, fontSize: 16, color: '#333' }}>
+         Welcome to our Event Management platform! Here, you can easily create your own events and invite all your friends to join. Organize gatherings, parties, or special occasions in just a few clicks , manage your guest list , and make every event memorable. Log in to start creating and sharing your events today!
+        </p>
+      </div>
+      
+<div>
+  {user && user.username ? <h2>Welcome, {user.username}</h2> : <h2>Welcome, Guest!</h2>}
+  {(!user || !user.username) && (
+    <>
+      <p>Log in or sign up to see your events, create new ones, and invite all your friends.</p>
+      <p>Start planning unforgettable moments today!</p>
+    </>
+  )}
+</div>
+
+      <section style={{ marginBottom: 20 }}>
+        <h3>Create Event</h3>
+        
+        <button className="btn btn-primary" onClick={() => { if (user) navigate('/create'); else navigate('/login'); }}>Create Event</button>
+      </section>
 
       {actionMessage.text && (
-        <div style={{
-          padding: '10px 14px',
-          background: actionMessage.type === 'success' ? '#e6ffed' : '#ffe6e6',
-          color: actionMessage.type === 'success' ? '#0b6623' : '#9b1c1c',
-          border: `1px solid ${actionMessage.type === 'success' ? '#2ecc71' : '#ff4d4d'}`,
-          borderRadius: 4,
-          marginBottom: 12
-        }}>
-          {actionMessage.text}
-        </div>
+        <div className={`action-message ${actionMessage.type === 'success' ? 'action-message-success' : 'action-message-error'}`}>{actionMessage.text}</div>
       )}
- 
+
       <h3>Your Events:</h3>
-      {events.length === 0 ? (
-        <>
-          {fetchError ? (
-            <p style={{ color: 'red' }}>Error loading events: {fetchError}</p>
-          ) : (
-            <p>No events found for this account.</p>
-          )}
-        </>
-      ) : (
-        <ul>
-          {events.map((event) => {
+      <ul>
+        {events.length === 0 ? (
+          <li>{fetchError ? <span style={{ color: 'red' }}>Error loading events: {fetchError}</span> : 'No events found for this account.'}</li>
+        ) : (
+          events.map((event) => {
             const title = event.title || event.name || 'Untitled Event';
             const rawDate = event.date || event.createdAt || event.created_at;
             const dateStr = rawDate ? new Date(rawDate).toLocaleDateString() : 'No date';
@@ -223,57 +192,34 @@ const Home = () => {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <strong>{title}</strong>
-                      <span style={{
-                        display: 'inline-block',
-                        background: '#007bff',
-                        color: '#fff',
-                        borderRadius: 12,
-                        padding: '2px 8px',
-                        marginLeft: 8,
-                        fontSize: 12
-                      }}>{inviterCount}</span>
+                      <span style={{ display: 'inline-block', background: '#007bff', color: '#fff', borderRadius: 12, padding: '2px 8px', marginLeft: 8, fontSize: 12 }}>{inviterCount}</span>
                       {' '}— <span>{dateStr}</span>
                       <div style={{ color: '#555' }}>{event.description}</div>
                       <div style={{ marginTop: 6, fontSize: 12, color: '#666' }}>
-                       <span style={{ marginRight: 8 }}><strong>Event ID:</strong> {event._id}</span>
+                        <span style={{ marginRight: 8 }}><strong>Event ID:</strong> {event._id}</span>
                         <button className="btn btn-sm" onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(String(event._id));
-                            setCopiedEventId(event._id);
-                            setTimeout(() => setCopiedEventId(null), 2000);
-                          } catch (e) {
-                            console.error('Copy failed', e);
-                          }
-                          }} style={{ marginLeft: 6 }}>Copy ID</button>
-                          <button className="btn btn-primary btn-sm" onClick={() => navigate(`/send-invitations?eventId=${event._id}`)} style={{ marginLeft: 8 }}>Send Invitations</button>
+                          try { await navigator.clipboard.writeText(String(event._id)); setCopiedEventId(event._id); setTimeout(() => setCopiedEventId(null), 2000); } catch (e) { console.error('Copy failed', e); }
+                        }} style={{ marginLeft: 6 }}>Copy ID</button>
+                        <button className="btn btn-primary btn-sm" onClick={() => navigate(`/send-invitations?eventId=${event._id}`)} style={{ marginLeft: 8 }}>Send Invitations</button>
                         {copiedEventId === event._id && <span style={{ marginLeft: 8, color: '#2a7' }}>Copied!</span>}
                       </div>
                     </div>
-                      <div>
+                    <div>
                       <button className="btn btn-sm" onClick={() => startEdit(event)}>Edit</button>
-                      <button className="btn btn-sm" onClick={() => setOpenInvitersFor(openInvitersFor === event._id ? null : event._id)} style={{ marginLeft: 8 }}>
-                        {openInvitersFor === event._id ? 'Hide Inviters' : 'Show Inviters'}
-                      </button>
+                      <button className="btn btn-sm" onClick={() => setOpenInvitersFor(openInvitersFor === event._id ? null : event._id)} style={{ marginLeft: 8 }}>{openInvitersFor === event._id ? 'Hide Inviters' : 'Show Inviters'}</button>
                       <button className="btn btn-danger btn-sm" onClick={async () => {
-                        const ok = window.confirm('Delete this event? This cannot be undone.');
-                        if (!ok) return;
-                        try {
-                          await api.delete(`/events/${event._id}`);
-                          setEvents((prev) => prev.filter(ev => ev._id !== event._id));
-                          showActionMessage('Event deleted', 'success');
-                        } catch (err) {
-                          console.error('Failed to delete event', err);
-                          showActionMessage(err.response?.data?.error || err.message || 'Failed to delete event', 'error');
-                        }
+                        const ok = window.confirm('Delete this event? This cannot be undone.'); if (!ok) return;
+                        try { await api.delete(`/events/${event._id}`); setEvents((prev) => prev.filter(ev => ev._id !== event._id)); showActionMessage('Event deleted', 'success'); } catch (err) { console.error('Failed to delete event', err); showActionMessage(err.response?.data?.error || err.message || 'Failed to delete event', 'error'); }
                       }} style={{ marginLeft: 8 }}>Delete</button>
                     </div>
                   </div>
                 )}
+
                 {openInvitersFor === event._id && (
                   <div style={{ marginTop: 10, padding: 8, background: '#fafafa', borderRadius: 6 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <strong>Inviters for this event</strong>
-                      <button onClick={() => navigate(`/add-inviters?eventId=${event._id}`)}>Add Inviter</button>
+                      <button className="btn btn-primary btn-sm" onClick={() => navigate(`/add-inviters?eventId=${event._id}`)}>Add Inviter</button>
                     </div>
                     <ul style={{ marginTop: 8 }}>
                       {(invitersByEvent[event._id] || []).length === 0 ? (
@@ -291,10 +237,11 @@ const Home = () => {
                 )}
               </li>
             );
-          })}
-        </ul>
-      )}
+          })
+        )}
+      </ul>
     </div>
   );
 };
+
 export default Home;

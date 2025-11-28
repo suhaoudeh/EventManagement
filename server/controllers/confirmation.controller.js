@@ -63,20 +63,51 @@ export const addConfirmation = async (req, res) => {
   }
 };
 
-// PUT /api/inviters/:id/send
-// Marks an inviter as sent (sets status to 'sent' and records sentAt). Does not send email by itself.
-export const sendInvitation = async (req, res) => {
+// UPDATE confirmation/inviter (e.g., update message or status)
+export const updateConfirmation = async (req, res) => {
   try {
-    const id = req.params.id;
-    if (!id) return res.status(400).json({ error: 'Inviter id required' });
+    const { id } = req.params;
+    const confirmation = await ConfirmationGuest.findById(id);
+    if (!confirmation) return res.status(404).json({ error: 'Confirmation not found' });
 
-    const update = { status: 'sent', sentAt: new Date() };
-    const updated = await ConfirmationGuest.findByIdAndUpdate(id, update, { new: true });
-    if (!updated) return res.status(404).json({ error: 'Inviter not found' });
-    res.status(200).json({ message: 'Invitation marked as sent', data: updated });
+    // ensure only the owner can update
+    const requester = req.user?.id || req.user?._id;
+    if (requester && String(confirmation.userId) !== String(requester)) {
+      return res.status(403).json({ error: 'Not authorized to update this confirmation' });
+    }
+
+    const updates = {};
+    if (req.body.message !== undefined) updates.message = req.body.message;
+    if (req.body.status !== undefined) updates.status = req.body.status;
+
+    const updated = await ConfirmationGuest.findByIdAndUpdate(id, updates, { new: true });
+    res.status(200).json({ message: 'Confirmation updated', data: updated });
   } catch (err) {
-    console.error('Failed to mark invitation as sent', err);
-    res.status(500).json({ error: 'Failed to send invitation' });
+    console.error('updateConfirmation error', err);
+    res.status(400).json({ error: err.message || 'Failed to update confirmation' });
+  }
+};
+
+// mark a confirmation as sent (simple implementation for demo/testing)
+export const sendConfirmation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const confirmation = await ConfirmationGuest.findById(id);
+    if (!confirmation) return res.status(404).json({ error: 'Confirmation not found' });
+
+    const requester = req.user?.id || req.user?._id;
+    if (requester && String(confirmation.userId) !== String(requester)) {
+      return res.status(403).json({ error: 'Not authorized to send this confirmation' });
+    }
+
+    confirmation.status = 'sent';
+    confirmation.sentAt = new Date();
+    await confirmation.save();
+
+    res.status(200).json({ message: 'Marked as sent', data: confirmation });
+  } catch (err) {
+    console.error('sendConfirmation error', err);
+    res.status(400).json({ error: err.message || 'Failed to mark as sent' });
   }
 };
 

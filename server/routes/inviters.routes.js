@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllConfirmations, addConfirmation, getInvitersForUser, sendInvitation } from '../controllers/confirmation.controller.js';
+import { getAllConfirmations, addConfirmation, getInvitersForUser, updateConfirmation, sendConfirmation } from '../controllers/confirmation.controller.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -13,7 +13,10 @@ router.get('/me', protect, getInvitersForUser);
 // Public: create an inviter (guest) entry
 router.post('/', addConfirmation);
 
-// Protected: mark an inviter as sent
-router.put('/:id/send', protect, sendInvitation);
+// Update an inviter (message/status)
+router.put('/:id', protect, updateConfirmation);
+
+// Mark an inviter as sent
+router.put('/:id/send', protect, sendConfirmation);
 
 export default router;

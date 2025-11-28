@@ -2,7 +2,6 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/event_logo.png';
 
-
 const Navbar = ({ user: propUser, onLogout: propOnLogout }) => {
   const navigate = useNavigate();
 
@@ -38,12 +37,11 @@ const Navbar = ({ user: propUser, onLogout: propOnLogout }) => {
 
   return (
     <nav className="navbar">
-      <Link to="/" className="navbar-brand">
-        <img src={logo} alt="Event Management" className="navbar-logo-img" />
+      <Link to="/" className="navbar-logo">
+        <img src={logo} alt="Event Logo" className="navbar-logo-img" />
       </Link>
 
       <Link to="/home" className="navbar-link">Home</Link>
-      <Link to="/events" className="navbar-link">Events</Link>
 
       <div className="navbar-spacer" />
 
@@ -65,9 +63,7 @@ const Navbar = ({ user: propUser, onLogout: propOnLogout }) => {
   );
 };
 
- export default Navbar;
-
- ////////////////////////////////////////////////////////////////
+export default Navbar;
 // import React from 'react';
 // import { Link, useNavigate } from 'react-router-dom';
 // import logo from '../assets/event_logo.png';

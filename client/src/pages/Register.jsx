@@ -1,71 +1,70 @@
-// export default Register;
 import React, { useState } from 'react';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
+import '../styles.css';
 
 function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // reset error
-
+    setError('');
     try {
-      const res = await api.post('/auth/register', { name, email, password });
+      if (!password || password.length < 8) {
+        setError('Password must be at least 8 characters');
+        return;
+      }
+      setLoading(true);
+      // POST to /api/auth/register (baseURL handles the /api prefix)
+      const res = await api.post('/auth/register', { name: name.trim(), email: email.trim(), password });
 
-      // Persist user info + token
       localStorage.setItem('user', JSON.stringify(res.data));
       if (res.data.token) localStorage.setItem('token', res.data.token);
 
-      // Redirect to home
       navigate('/home');
     } catch (err) {
-      // Show backend error or default message
-      if (err.response && err.response.data && err.response.data.error) {
-        setError(err.response.data.error);
-      } else {
-        setError('Registration failed. Please try again.');
-      }
+      console.error('Registration error', err?.response || err);
+      setError(err.response?.data?.error || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: '0 auto', padding: 20 }}>
+    <div className="auth-container page-container">
       <h2>Register</h2>
-      <form onSubmit={handleSubmit}>
-        <input
+      <form onSubmit={handleSubmit} className="form-container">
+        <input className="form-input"
           type="text"
           placeholder="Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          style={{ width: '100%', marginBottom: 10, padding: 8 }}
         />
-        <input
+        <input className="form-input"
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          style={{ width: '100%', marginBottom: 10, padding: 8 }}
         />
-        <input
+        <input className="form-input"
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          style={{ width: '100%', marginBottom: 10, padding: 8 }}
         />
-        <button type="submit" style={{ width: '100%', padding: 10 }}>
-          Register
-        </button>
+        <div style={{ marginTop: 10 }}>
+          <button className="button-primary" type="submit">Register</button>
+        </div>
       </form>
-      {error && <p style={{ color: 'red', marginTop: 10 }}>{error}</p>}
+      {error && <p className="text-error">{error}</p>}
     </div>
   );
 }
