@@ -1,63 +1,9 @@
 
-// import React, { useEffect, useState } from 'react';
-// import api from '../api';
-
-// const Home = () => {
-//   const [events, setEvents] = useState([]);
-//   const [user, setUser] = useState(null);
-
-//   // Retrieve user info from localStorage
-//   useEffect(() => {
-//     try {
-//       const storedUser = JSON.parse(localStorage.getItem("user"));
-//       setUser(storedUser);
-//     } catch (err) {
-//       console.error("Failed to parse user:", err);
-//     }
-//   }, []);
-
-//   // Fetch events
-//   useEffect(() => {
-//     const fetchEvents = async () => {
-//       try {
-//         const res = await api.get('/events');
-//         setEvents(res.data);
-//       } catch (err) {
-//         console.error(err);
-//       }
-//     };
-//     fetchEvents();
-//   }, []);
-
-//   return (
-//     <div style={{ padding: "20px" }}>
-//       <h1>Home Page</h1>
-//       {user && user.name ? (
-//         <h2>Welcome, {user.name}</h2>
-//       ) : (
-//         <h2>Welcome Guest</h2>
-//       )}
-
-//       <h3>Events List:</h3>
-//       {events.length === 0 ? (
-//         <p>No events found</p>
-//       ) : (
-//         <ul>
-//           {events.map((event) => (
-//             <li key={event._id}>
-//               {event.name} - {event.date}
-//             </li>
-//           ))}
-//         </ul>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default Home;
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import homepageImage from '../assets/homepage_event.png';
+import '../styles.css';
  
 const Home = () => {
   const [events, setEvents] = useState([]);
@@ -201,17 +147,22 @@ const Home = () => {
         <h2>Welcome Guest — please log in to see your events</h2>
       )}
  
-      <section style={{ marginBottom: 20 }}>
-        <h3>Create Event</h3>
-        <p>You must be logged in to create events.</p>
-        <button onClick={() => {
-          // redirect logged-in users to a creation page (if implemented)
-          if (user) navigate('/create');
-          else navigate('/login');
-        }}>
-          Create Event
-        </button>
-      </section>
+          <section className="home-hero">
+            <div>
+              <img src={homepageImage} alt="Events" className="homepage-img" />
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <h3>Create Event</h3>
+              <p>You must be logged in to create events.</p>
+              <button className="btn btn-primary" onClick={() => {
+                // redirect logged-in users to a creation page (if implemented)
+                if (user) navigate('/create');
+                else navigate('/login');
+              }}>
+                Create Event
+              </button>
+            </div>
+          </section>
 
       {actionMessage.text && (
         <div style={{
@@ -264,8 +215,8 @@ const Home = () => {
                       <input name="country" value={editFormData.country} onChange={handleEditChange} placeholder="Country" />
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <button onClick={() => saveEdit(event._id)}>Save</button>
-                      <button onClick={cancelEdit}>Cancel</button>
+                      <button className="btn btn-primary btn-sm" onClick={() => saveEdit(event._id)}>Save</button>
+                      <button className="btn btn-sm" onClick={cancelEdit}>Cancel</button>
                     </div>
                   </div>
                 ) : (
@@ -284,8 +235,8 @@ const Home = () => {
                       {' '}— <span>{dateStr}</span>
                       <div style={{ color: '#555' }}>{event.description}</div>
                       <div style={{ marginTop: 6, fontSize: 12, color: '#666' }}>
-                        <span style={{ marginRight: 8 }}><strong>Event ID:</strong> {event._id}</span>
-                        <button onClick={async () => {
+                       <span style={{ marginRight: 8 }}><strong>Event ID:</strong> {event._id}</span>
+                        <button className="btn btn-sm" onClick={async () => {
                           try {
                             await navigator.clipboard.writeText(String(event._id));
                             setCopiedEventId(event._id);
@@ -293,17 +244,17 @@ const Home = () => {
                           } catch (e) {
                             console.error('Copy failed', e);
                           }
-                        }} style={{ marginLeft: 6 }}>Copy ID</button>
-                        <button onClick={() => navigate(`/send-invitations?eventId=${event._id}`)} style={{ marginLeft: 8 }}>Send Invitations</button>
+                          }} style={{ marginLeft: 6 }}>Copy ID</button>
+                          <button className="btn btn-primary btn-sm" onClick={() => navigate(`/send-invitations?eventId=${event._id}`)} style={{ marginLeft: 8 }}>Send Invitations</button>
                         {copiedEventId === event._id && <span style={{ marginLeft: 8, color: '#2a7' }}>Copied!</span>}
                       </div>
                     </div>
-                    <div>
-                      <button onClick={() => startEdit(event)}>Edit</button>
-                      <button onClick={() => setOpenInvitersFor(openInvitersFor === event._id ? null : event._id)} style={{ marginLeft: 8 }}>
+                      <div>
+                      <button className="btn btn-sm" onClick={() => startEdit(event)}>Edit</button>
+                      <button className="btn btn-sm" onClick={() => setOpenInvitersFor(openInvitersFor === event._id ? null : event._id)} style={{ marginLeft: 8 }}>
                         {openInvitersFor === event._id ? 'Hide Inviters' : 'Show Inviters'}
                       </button>
-                      <button onClick={async () => {
+                      <button className="btn btn-danger btn-sm" onClick={async () => {
                         const ok = window.confirm('Delete this event? This cannot be undone.');
                         if (!ok) return;
                         try {
@@ -346,6 +297,4 @@ const Home = () => {
     </div>
   );
 };
- 
 export default Home;
- 

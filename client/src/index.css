@@ -11,3 +11,16 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Accessibility & focus styles */
+:focus {
+  outline: 3px solid rgba(106,79,182,0.18);
+  outline-offset: 2px;
+}
+
+/* Utility container to keep pages centered */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px;
+}
