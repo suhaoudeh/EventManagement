@@ -67,7 +67,7 @@ async function connectWithRetry(attempt = 1) {
   try {
     console.log(`Attempting MongoDB connection (attempt ${attempt})`);
     await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 3000,
     });
 
     console.log('MongoDB connected');
