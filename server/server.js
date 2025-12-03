@@ -94,7 +94,25 @@ async function connectWithRetry(attempt = 1) {
     } else {
       console.error(`Failed to connect to MongoDB after ${MAX_RETRIES} attempts.`);
       console.error('Ensure MONGO_URI is correct and the deployment network allows outgoing connections to MongoDB Atlas.');
-      process.exit(1);
+
+      // Do not exit the process in production environments where frontend should still be served.
+      // Start the server without mounted API routes so the client can still load and show a helpful message.
+      startServer();
+
+      // Schedule periodic reconnect attempts in the background.
+      const RECONNECT_INTERVAL_MS = 60_000; // try every minute
+      console.log(`Scheduling background MongoDB reconnect attempts every ${RECONNECT_INTERVAL_MS}ms.`);
+      setInterval(async () => {
+        try {
+          console.log('Background reconnect: attempting MongoDB connection...');
+          await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 3000 });
+          console.log('Background reconnect: MongoDB connected');
+          // mount APIs now that DB is available (if not already mounted)
+          mountApiRoutes();
+        } catch (bgErr) {
+          console.warn('Background reconnect failed:', bgErr && bgErr.message ? bgErr.message : bgErr);
+        }
+      }, RECONNECT_INTERVAL_MS);
     }
   }
 }
