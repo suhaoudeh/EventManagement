@@ -2,6 +2,9 @@ import express from 'express';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import eventRoutes from './routes/event.routes.js';
@@ -12,50 +15,61 @@ import invitersRoutes from './routes/inviters.routes.js';
 dotenv.config();
 const app = express();
 
+// Path helpers
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const clientDistPath = path.join(__dirname, '../client/dist');
+
 // Middleware
-app.use(cors({
-  origin: 'http://localhost:7512', // your frontend URL
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 
-// Basic request logger
+// Request logger
 app.use((req, res, next) => {
-  const headersPreview = Object.entries(req.headers)
-    .slice(0, 20)
-    .map(([k, v]) => `${k}:${String(v).slice(0, 100)}`)
-    .join(' | ');
-  console.log(`[REQ] ${req.method} ${req.originalUrl} - Headers: ${headersPreview}`);
+  console.log(`[REQ] ${req.method} ${req.originalUrl}`);
   next();
 });
 
-// Test root route
-app.get('/', (req, res) => res.send('Welcome to the Event Management Server'));
-
-// Routes
-app.use('/api/auth', authRoutes);         // /api/auth/login, /api/auth/register
-app.use('/api/users', userRoutes);        // user management
-app.use('/api/events', eventRoutes);      // events
-app.use('/api/occasions', occasionRoutes); // occasions
-app.use('/api/confirmations', confirmationRoutes); // confirmations (guest RSVPs)
-app.use('/api/inviters', invitersRoutes); // inviters API (POST /api/inviters, GET /api/inviters/me)
-
+// Serve static client (will be used regardless of DB state)
+app.use(express.static(clientDistPath));
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(clientDistPath, 'index.html'));
+});
 
 // MongoDB connection & server start
 const PORT = process.env.PORT || 3000;
 
-// mongoose.connect(process.env.MONGO_URI)
-//   .then(() => {
-//     console.log('MongoDB connected');
-//     app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-//   })
-//   .catch(err => console.error('MongoDB connection error:', err));
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('MongoDB connected');
-    app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://<your-ip-address>:${PORT}`));
-  })
-  .catch(err => console.error('MongoDB connection error:', err));
+function startServer() {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
 
+if (process.env.MONGO_URI) {
+  mongoose.connect(process.env.MONGO_URI)
+    .then(() => {
+      console.log('MongoDB connected');
+
+      // Mount API routes after successful DB connection
+      app.use('/api/auth', authRoutes);
+      app.use('/api/users', userRoutes);
+      app.use('/api/events', eventRoutes);
+      app.use('/api/occasions', occasionRoutes);
+      app.use('/api/confirmations', confirmationRoutes);
+      app.use('/api/inviters', invitersRoutes);
+
+      startServer();
+    })
+    .catch(err => {
+      console.error('MongoDB connection error:', err);
+      console.error('Exiting because database connection is required.');
+      process.exit(1);
+    });
+} else {
+  console.warn('MONGO_URI not set — starting server without MongoDB (API routes disabled)');
+  startServer();
+}
 
 export default app;
+
+ 
