@@ -45,30 +45,62 @@ function startServer() {
   });
 }
 
-if (process.env.MONGO_URI) {
-  mongoose.connect(process.env.MONGO_URI)
-    .then(() => {
-      console.log('MongoDB connected');
+const MAX_RETRIES = 5;
+const BASE_DELAY_MS = 2000;
 
-      // Mount API routes after successful DB connection
-      app.use('/api/auth', authRoutes);
-      app.use('/api/users', userRoutes);
-      app.use('/api/events', eventRoutes);
-      app.use('/api/occasions', occasionRoutes);
-      app.use('/api/confirmations', confirmationRoutes);
-      app.use('/api/inviters', invitersRoutes);
-
-      startServer();
-    })
-    .catch(err => {
-      console.error('MongoDB connection error:', err);
-      console.error('Exiting because database connection is required.');
-      process.exit(1);
-    });
-} else {
-  console.warn('MONGO_URI not set — starting server without MongoDB (API routes disabled)');
-  startServer();
+function mountApiRoutes() {
+  app.use('/api/auth', authRoutes);
+  app.use('/api/users', userRoutes);
+  app.use('/api/events', eventRoutes);
+  app.use('/api/occasions', occasionRoutes);
+  app.use('/api/confirmations', confirmationRoutes);
+  app.use('/api/inviters', invitersRoutes);
 }
+
+async function connectWithRetry(attempt = 1) {
+  if (!process.env.MONGO_URI) {
+    console.warn('MONGO_URI not set — starting server without MongoDB (API routes disabled)');
+    startServer();
+    return;
+  }
+
+  try {
+    console.log(`Attempting MongoDB connection (attempt ${attempt})`);
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
+
+    console.log('MongoDB connected');
+
+    // connection event handlers for runtime visibility
+    mongoose.connection.on('error', err => {
+      console.error('Mongoose connection error:', err);
+    });
+    mongoose.connection.on('disconnected', () => {
+      console.warn('Mongoose disconnected');
+    });
+
+    // Mount APIs and start server
+    mountApiRoutes();
+    startServer();
+  } catch (err) {
+    console.error(`MongoDB connection attempt ${attempt} failed:`);
+    console.error(err && err.message ? err.message : err);
+
+    if (attempt < MAX_RETRIES) {
+      const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+      console.log(`Retrying in ${delay}ms...`);
+      setTimeout(() => connectWithRetry(attempt + 1), delay);
+    } else {
+      console.error(`Failed to connect to MongoDB after ${MAX_RETRIES} attempts.`);
+      console.error('Ensure MONGO_URI is correct and the deployment network allows outgoing connections to MongoDB Atlas.');
+      process.exit(1);
+    }
+  }
+}
+
+// start the connect + mount flow
+connectWithRetry();
 
 export default app;
 
