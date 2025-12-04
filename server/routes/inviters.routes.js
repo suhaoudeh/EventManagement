@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllConfirmations, addConfirmation, getInvitersForUser, updateConfirmation, sendConfirmation } from '../controllers/confirmation.controller.js';
+import { getAllConfirmations, addConfirmation, getInvitersForUser, updateConfirmation, sendConfirmation, sendBatch } from '../controllers/confirmation.controller.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -18,5 +18,8 @@ router.put('/:id', protect, updateConfirmation);
 
 // Mark an inviter as sent
 router.put('/:id/send', protect, sendConfirmation);
+
+// Send multiple invitations in a batch: body { ids: [..] } or { eventId }
+router.post('/send-batch', protect, sendBatch);
 
 export default router;

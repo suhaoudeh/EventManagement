@@ -20,10 +20,11 @@ const confirmationSchema = new mongoose.Schema({
   guestEmail: { type: String, required: true },
   guestName: { type: String, required: true },
   phone: { type: String },
-  status: { type: String, enum: ['confirmed', 'pending', 'declined'], default: 'pending' },
+  status: { type: String, enum: ['confirmed', 'pending', 'declined', 'sent', 'failed'], default: 'pending' },
   numberOfPeople: { type: Number, default: 1 },
   message: { type: String },
   confirmedAt: { type: Date },
+  sentAt: { type: Date },
   createdAt: { type: Date, default: Date.now }
 }, {
   collection: 'Confirmation–guests' // 👈 EXACT name from your MongoDB

@@ -11,7 +11,7 @@ import eventRoutes from './routes/event.routes.js';
 import occasionRoutes from './routes/occasion.routes.js';
 import confirmationRoutes from './routes/confirmation.routes.js';
 import invitersRoutes from './routes/inviters.routes.js';
-
+//import confirmationRoutes from './routes/confirmation.routes.js';
 dotenv.config();
 const app = express();
 
