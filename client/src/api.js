@@ -1,11 +1,12 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL ||   ' http://localhost:3000/api',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3000/api',  // Set base URL from environment variable or default to localhost
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
 // Log to debug
 console.log('API Base URL:', api.defaults.baseURL);
 
@@ -19,6 +20,5 @@ api.interceptors.request.use((config) => {
 }, (error) => {
     return Promise.reject(error);
 });
-
 
 export default api;
