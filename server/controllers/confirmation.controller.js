@@ -150,6 +150,9 @@ const sendEmailForConfirmation = async (confirmation, event) => {
 
     await mailTransporter.sendMail(mailOptions);
     return { ok: true };
+
+
+    
   } catch (err) {
     console.error('sendEmailForConfirmation error:', err);
     return { ok: false, error: err.message || String(err) };

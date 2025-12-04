@@ -15,6 +15,11 @@ import invitersRoutes from './routes/inviters.routes.js';
 dotenv.config();
 const app = express();
 
+
+app.use(cors({
+  origin: 'https://eventmanagement-fe4u.onrender.com',
+  credentials: true
+}));
 // Path helpers
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
