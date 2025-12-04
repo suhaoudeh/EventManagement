@@ -39,6 +39,7 @@ app.get(/^(?!\/api).*/, (req, res) => {
 // MongoDB connection & server start
 const PORT = process.env.PORT || 3000;
 
+
 function startServer() {
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
@@ -47,6 +48,12 @@ function startServer() {
 
 const MAX_RETRIES = 5;
 const BASE_DELAY_MS = 2000;
+
+// Basic MONGO_URI validation: ensure it starts with expected scheme
+function hasValidMongoScheme(uri) {
+  if (!uri || typeof uri !== 'string') return false;
+  return /^mongodb(?:\+srv)?:\/\//i.test(uri.trim());
+}
 
 function mountApiRoutes() {
   app.use('/api/auth', authRoutes);
@@ -60,6 +67,15 @@ function mountApiRoutes() {
 async function connectWithRetry(attempt = 1) {
   if (!process.env.MONGO_URI) {
     console.warn('MONGO_URI not set — starting server without MongoDB (API routes disabled)');
+    startServer();
+    return;
+  }
+
+  // quick validation to avoid noisy background errors for malformed URIs
+  if (!hasValidMongoScheme(process.env.MONGO_URI)) {
+    console.error('MONGO_URI appears malformed or missing the required scheme.');
+    console.error('It must start with "mongodb://" or "mongodb+srv://".');
+    console.error('Not attempting DB connection. Start server without APIs so frontend remains available.');
     startServer();
     return;
   }
@@ -122,4 +138,3 @@ connectWithRetry();
 
 export default app;
 
- 
