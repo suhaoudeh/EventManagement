@@ -2,9 +2,6 @@ import express from 'express';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import eventRoutes from './routes/event.routes.js';
@@ -14,88 +11,67 @@ import invitersRoutes from './routes/inviters.routes.js';
 
 dotenv.config();
 const app = express();
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// ------------------------
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, '../client/dist')));
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
+
 // Middleware
-// ------------------------
-app.use(cors({
-  origin: process.env.CLIENT_URL || '*', // allow your frontend domain
-  credentials: true
-}));
+app.use(cors(
+  {
+    origin: process.env.CLIENT_URL || '*', // Allow all origins for simplicity; adjust in production
+    credentials: true,
+  }
+)); 
+
 app.use(express.json());
 
-// Logger for debugging
+// Basic request logger
 app.use((req, res, next) => {
+  const headersPreview = Object.entries(req.headers)
+    .slice(0, 20)
+    .map(([k, v]) => `${k}:${String(v).slice(0, 100)}`)
+    .join(' | ');
+  console.log(`[REQ] ${req.method} ${req.originalUrl} - Headers: ${headersPreview}`);
+  next();
+});
+app.use((req,res,next) => {
   console.log(`[REQ] ${req.method} ${req.originalUrl}`);
   next();
 });
+// Test root route
+app.get('/', (req, res) => res.send('Welcome to the Event Management Server'));
 
-// ------------------------
-// Serve static frontend
-// ------------------------
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const clientDistPath = path.join(__dirname, '../client/dist');
+// Routes
+app.use('/api/auth', authRoutes);         // /api/auth/login, /api/auth/register
+app.use('/api/users', userRoutes);        // user management
+app.use('/api/events', eventRoutes);      // events
+app.use('/api/occasions', occasionRoutes); // occasions
+app.use('/api/confirmations', confirmationRoutes); // confirmations (guest RSVPs)
+app.use('/api/inviters', invitersRoutes); // inviters API (POST /api/inviters, GET /api/inviters/me)
 
-app.use(express.static(clientDistPath));
-app.get(/^(?!\/api).*/, (req, res) => {
-  res.sendFile(path.join(clientDistPath, 'index.html'));
-});
 
-// ------------------------
-// Mount API routes
-// ------------------------
-function mountApiRoutes() {
-  app.use('/api/auth', authRoutes);
-  app.use('/api/users', userRoutes);
-  app.use('/api/events', eventRoutes);
-  app.use('/api/occasions', occasionRoutes);
-  app.use('/api/confirmations', confirmationRoutes);
-  app.use('/api/inviters', invitersRoutes);
-}
 
-// ------------------------
-// Server start
-// ------------------------
+// MongoDB connection & server start
 const PORT = process.env.PORT || 3000;
 
-function startServer() {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT} (bound to 0.0.0.0, public)`);
-  });
-}
-
-// ------------------------
-// MongoDB connection
-// ------------------------
-async function connectWithRetry(attempt = 1) {
-  const MAX_RETRIES = 5;
-  const DELAY_MS = 2000;
-
-  if (!process.env.MONGO_URI) {
-    console.warn('MONGO_URI not set — starting server without MongoDB APIs');
-    startServer();
-    return;
-  }
-
-  try {
-    console.log(`Connecting to MongoDB (attempt ${attempt})`);
-    await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 });
+// mongoose.connect(process.env.MONGO_URI)
+//   .then(() => {
+//     console.log('MongoDB connected');
+//     app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+//   })
+//   .catch(err => console.error('MongoDB connection error:', err));
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
     console.log('MongoDB connected');
-    mountApiRoutes();
-    startServer();
-  } catch (err) {
-    console.error(`MongoDB connection failed: ${err.message}`);
-    if (attempt < MAX_RETRIES) {
-      console.log(`Retrying MongoDB connection in ${DELAY_MS * attempt}ms...`);
-      setTimeout(() => connectWithRetry(attempt + 1), DELAY_MS * attempt);
-    } else {
-      console.error('Starting server without MongoDB APIs');
-      startServer();
-    }
-  }
-}
+    app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://localhost:${PORT}`));
+  })
+  .catch(err => console.error('MongoDB connection error:', err));
 
-connectWithRetry();
 
 export default app;
