@@ -68,7 +68,7 @@ const sendEmailForConfirmation = async (confirmation, event) => {
     const transporter = nodemailer.createTransport({
       host: smtpHost,
       port: smtpPort,
-      secure,
+      secure: false,
       auth: { user: smtpUser, pass: smtpPass },
     });
 
