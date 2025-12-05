@@ -2,6 +2,7 @@ import ConfirmationGuest from '../models/confirmation.model.js';
 import Event from '../models/event.model.js';
 import { Resend } from 'resend';
 
+import nodemailer from 'nodemailer';
 // ------------------------
 // Setup Resend (make sure dotenv is loaded in server.js)
 // ------------------------
@@ -38,59 +39,51 @@ const buildInvitationHtml = (confirmation, event) => `
   </div>
 `;
 
-// ------------------------
-// Helper: Send email via Resend
-// ------------------------
-// const sendEmailForConfirmation = async (confirmation, event) => {
-//   try {
-//     if (resend) {
-//       const emailData = await resend.emails.send({
-//         from: process.env.EMAIL_FROM,
-//         to: confirmation.guestEmail,
-//         subject: `Invitation: ${event?.title || 'You are invited'}`,
-//         html: buildInvitationHtml(confirmation, event),
-//       });
-//       console.log('Email sent via Resend:', emailData);
-//       return { ok: true };
-//     }
-
-//     // Dev fallback: log the email and pretend success so UI/testing can continue
-//     if (process.env.NODE_ENV !== 'production') {
-//       console.warn('Resend not configured — logging email (dev fallback)');
-//       console.log('--- EMAIL PREVIEW ---');
-//       console.log('From:', process.env.EMAIL_FROM || '<not-set>');
-//       console.log('To:', confirmation.guestEmail);
-//       console.log('Subject:', `Invitation: ${event?.title || 'You are invited'}`);
-//       console.log('HTML:', buildInvitationHtml(confirmation, event));
-//       console.log('--- END PREVIEW ---');
-//       return { ok: true };
-//     }
-
-//     return { ok: false, error: 'No email provider configured' };
-//   } catch (err) {
-//     console.error('sendEmailForConfirmation error:', err);
-//     return { ok: false, error: err.message || String(err) };
-//   }
-// };
-// ------------------------
-// Helper: Send one confirmation email
-// ------------------------
 const sendEmailForConfirmation = async (confirmation, event) => {
   try {
-    // Use the Resend API key from your .env
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    // 1) Prefer Resend if configured
+    if (resend) {
+      const emailData = await resend.emails.send({
+        from: process.env.EMAIL_FROM,
+        to: confirmation.guestEmail,
+        subject: `Invitation: ${event?.title || 'You are invited'}`,
+        html: buildInvitationHtml(confirmation, event),
+      });
+      console.log('Email sent via Resend:', emailData);
+      return { ok: true };
+    }
 
-    const emailData = await resend.emails.send({
-      from: process.env.EMAIL_FROM,        // onboarding@resend.dev
-      to: confirmation.guestEmail,         // the inviter's real email
-      subject: `Invitation: ${event?.title || 'You are invited'}`,
-      html: buildInvitationHtml(confirmation, event),
+    // 2) SMTP fallback
+    const smtpHost = (process.env.SMTP_HOST || '').trim();
+    const smtpUser = (process.env.SMTP_USER || '').trim();
+    const smtpPass = (process.env.SMTP_PASS || '').trim();
+    const smtpPort = Number(process.env.SMTP_PORT || 465);
+    const secure = smtpPort === 465;
+
+    if (!smtpHost || !smtpUser || !smtpPass) {
+      console.error('SMTP credentials missing (SMTP_HOST/SMTP_USER/SMTP_PASS)');
+      return { ok: false, error: 'SMTP credentials missing' };
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure,
+      auth: { user: smtpUser, pass: smtpPass },
     });
 
-    console.log("Email sent:", emailData);
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || smtpUser,
+      to: confirmation.guestEmail,
+      subject: `Invitation: ${event?.title || 'You are invited'}`,
+      html: buildInvitationHtml(confirmation, event),
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent via SMTP:', info.messageId || info);
     return { ok: true };
   } catch (err) {
-    console.error("sendEmailForConfirmation error:", err);
+    console.error('sendEmailForConfirmation error:', err);
     return { ok: false, error: err.message || String(err) };
   }
 };
