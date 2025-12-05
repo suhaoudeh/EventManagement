@@ -149,8 +149,14 @@ export const sendConfirmation = async (req, res) => {
 export const getAllConfirmations = async (req, res) => {
   try {
     const filter = {};
-    if (req.query.eventId) filter.eventId = req.query.eventId;
-    if (req.query.userId) filter.userId = req.query.userId;
+    if (req.query && req.query.eventId) filter.eventId = req.query.eventId;
+    // Prefer explicit query.userId, otherwise fall back to authenticated user
+    if (req.query && req.query.userId) {
+      filter.userId = req.query.userId;
+    } else if (req.user && (req.user.id || req.user._id)) {
+      filter.userId = req.user.id || req.user._id;
+    }
+
     const confirmations = await ConfirmationGuest.find(filter);
     res.status(200).json(confirmations);
   } catch (err) {

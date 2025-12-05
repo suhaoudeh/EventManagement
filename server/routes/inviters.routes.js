@@ -8,16 +8,8 @@ const router = express.Router();
 router.get('/', getAllConfirmations);
 
 // Protected: list inviters created by logged-in user, optional ?eventId=
-router.get('/me', protect, (req, res, next) => {
-	try {
-		req.query = req.query || {};
-		const uid = req.user?.id || req.user?._id;
-		if (uid) req.query.userId = uid;
-		return getAllConfirmations(req, res, next);
-	} catch (err) {
-		next(err);
-	}
-});
+// Controller will use `req.user` when query.userId is not provided
+router.get('/me', protect, getAllConfirmations);
 
 // Public: create an inviter (guest) entry
 router.post('/', addConfirmation);
