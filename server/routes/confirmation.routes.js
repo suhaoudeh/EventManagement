@@ -18,7 +18,6 @@
 import express from 'express';
 import {
   getAllConfirmations,
-  getInvitersForUser,
   addConfirmation,
   updateConfirmation,
   sendConfirmation
@@ -33,8 +32,18 @@ const router = express.Router();
 // GET all confirmations
 router.get('/', getAllConfirmations);
 
-// Get inviters for logged-in user
-router.get('/my-inviters', authMiddleware, getInvitersForUser);
+// Get inviters for logged-in user (delegates to getAllConfirmations with user filter)
+router.get('/my-inviters', authMiddleware, (req, res, next) => {
+  // ensure controller receives userId filter
+  try {
+    req.query = req.query || {};
+    const uid = req.user?.id || req.user?._id;
+    if (uid) req.query.userId = uid;
+    return getAllConfirmations(req, res, next);
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Add a new confirmation (invite guest)
 router.post('/', addConfirmation);

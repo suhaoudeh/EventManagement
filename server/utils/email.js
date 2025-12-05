@@ -1,24 +1,20 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-export const transporter = nodemailer.createTransport({
-  host: "sandbox.smtp.mailtrap.io",
-  port: 2525,
-  auth: {
-    user: "3d7e5368a73397",
-    pass: "fc51f202af5d6b"
-  }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-export const sendEmail = async (to, subject, message) => {
+export const sendEmail = async (to, subject, html) => {
   try {
-    await transporter.sendMail({
-      from: '"Event Management" <no-reply@eventmanagement.com>', // name if the sender
+    const data = await resend.emails.send({
+      from: process.env.EMAIL_FROM,   // onboarding@resend.dev
       to,
       subject,
-      html: message,
+      html,
     });
-    console.log("Email sent to: " + to);
-  } catch (err) {
-    console.error("Email Error:", err);
+
+    console.log("Email sent:", data);
+    return data;
+  } catch (error) {
+    console.error("Resend Email Error:", error);
+    throw error;
   }
 };

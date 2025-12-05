@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllConfirmations, addConfirmation, getInvitersForUser, updateConfirmation, sendConfirmation, sendBatch } from '../controllers/confirmation.controller.js';
+import { getAllConfirmations, addConfirmation, updateConfirmation, sendConfirmation } from '../controllers/confirmation.controller.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -8,7 +8,16 @@ const router = express.Router();
 router.get('/', getAllConfirmations);
 
 // Protected: list inviters created by logged-in user, optional ?eventId=
-router.get('/me', protect, getInvitersForUser);
+router.get('/me', protect, (req, res, next) => {
+	try {
+		req.query = req.query || {};
+		const uid = req.user?.id || req.user?._id;
+		if (uid) req.query.userId = uid;
+		return getAllConfirmations(req, res, next);
+	} catch (err) {
+		next(err);
+	}
+});
 
 // Public: create an inviter (guest) entry
 router.post('/', addConfirmation);
@@ -19,7 +28,6 @@ router.put('/:id', protect, updateConfirmation);
 // Mark an inviter as sent
 router.put('/:id/send', protect, sendConfirmation);
 
-// Send multiple invitations in a batch: body { ids: [..] } or { eventId }
-router.post('/send-batch', protect, sendBatch);
+// Batch sending is not implemented on this branch; use single-send per inviter.
 
 export default router;

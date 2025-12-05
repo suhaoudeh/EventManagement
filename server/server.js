@@ -10,7 +10,11 @@ import confirmationRoutes from './routes/confirmation.routes.js';
 import invitersRoutes from './routes/inviters.routes.js';
 
 dotenv.config();
+//console.log("Resend API Key:", process.env.RESEND_API_KEY);
+
+//dotenv.config({ path: './.env' });
 const app = express();
+
 import path from 'path';
 import { fileURLToPath } from 'url';
 
