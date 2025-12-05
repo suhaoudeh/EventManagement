@@ -10,13 +10,29 @@ import confirmationRoutes from './routes/confirmation.routes.js';
 import invitersRoutes from './routes/inviters.routes.js';
 
 dotenv.config();
+//console.log("Resend API Key:", process.env.RESEND_API_KEY);
+
+//dotenv.config({ path: './.env' });
 const app = express();
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, '../client/dist')));
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
+
 // Middleware
-app.use(cors({
-  origin: 'http://localhost:7512', // your frontend URL
-  credentials: true
-}));
+app.use(cors(
+  {
+    origin: process.env.CLIENT_URL || '*', // Allow all origins for simplicity; adjust in production
+    credentials: true,
+  }
+)); 
+
 app.use(express.json());
 
 // Basic request logger
@@ -28,7 +44,10 @@ app.use((req, res, next) => {
   console.log(`[REQ] ${req.method} ${req.originalUrl} - Headers: ${headersPreview}`);
   next();
 });
-
+app.use((req,res,next) => {
+  console.log(`[REQ] ${req.method} ${req.originalUrl}`);
+  next();
+});
 // Test root route
 app.get('/', (req, res) => res.send('Welcome to the Event Management Server'));
 
@@ -39,6 +58,7 @@ app.use('/api/events', eventRoutes);      // events
 app.use('/api/occasions', occasionRoutes); // occasions
 app.use('/api/confirmations', confirmationRoutes); // confirmations (guest RSVPs)
 app.use('/api/inviters', invitersRoutes); // inviters API (POST /api/inviters, GET /api/inviters/me)
+
 
 
 // MongoDB connection & server start
@@ -53,7 +73,7 @@ const PORT = process.env.PORT || 3000;
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('MongoDB connected');
-    app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://<your-ip-address>:${PORT}`));
+    app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://localhost:${PORT}`));
   })
   .catch(err => console.error('MongoDB connection error:', err));
 

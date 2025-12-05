@@ -1,16 +1,58 @@
+// import express from 'express';
+// import { getAllConfirmations, addConfirmation } from '../controllers/confirmation.controller.js';
+
+// const router = express.Router();
+
+// // GET all confirmations
+// router.get('/', getAllConfirmations);
+// //router.post('/', getAllConfirmations);
+// router.put('/', getAllConfirmations);
+// router.delete('/', getAllConfirmations);
+// router.patch('/', getAllConfirmations);
+// router.post('/', addConfirmation);
+
+
+
+// export default router;
+
 import express from 'express';
-import { getAllConfirmations, addConfirmation } from '../controllers/confirmation.controller.js';
+import {
+  getAllConfirmations,
+  addConfirmation,
+  updateConfirmation,
+  sendConfirmation
+} from '../controllers/confirmation.controller.js';
+
+
+import { protect } from '../middleware/auth.js';
+const authMiddleware = protect;
 
 const router = express.Router();
 
 // GET all confirmations
 router.get('/', getAllConfirmations);
-//router.post('/', getAllConfirmations);
-router.put('/', getAllConfirmations);
-router.delete('/', getAllConfirmations);
-router.patch('/', getAllConfirmations);
+
+// Get inviters for logged-in user (delegates to getAllConfirmations with user filter)
+router.get('/my-inviters', authMiddleware, (req, res, next) => {
+  // ensure controller receives userId filter
+  try {
+    req.query = req.query || {};
+    const uid = req.user?.id || req.user?._id;
+    if (uid) req.query.userId = uid;
+    return getAllConfirmations(req, res, next);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Add a new confirmation (invite guest)
 router.post('/', addConfirmation);
 
+// Update confirmation (message/status)
+router.put('/:id', authMiddleware, updateConfirmation);
+router.patch('/:id', authMiddleware, updateConfirmation);
 
+// ❗️ SEND EMAIL INVITATION (THIS IS WHAT YOU ARE MISSING)
+router.post('/:id/send', authMiddleware, sendConfirmation);
 
 export default router;

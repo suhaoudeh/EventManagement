@@ -12,6 +12,9 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+  console.log("base url", process.env.REACT_APP_API_URL);
+
+
 
     try {
       const res = await api.post('/auth/login', { email, password });
